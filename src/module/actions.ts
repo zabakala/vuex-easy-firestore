@@ -1,4 +1,18 @@
-import Fb from 'firebase/compat/app'
+import { getAuth } from 'firebase/auth'
+import {
+  doc as __doc,
+  getDoc,
+  setDoc,
+  orderBy,
+  where,
+  onSnapshot,
+  getFirestore,
+  writeBatch,
+  DocumentChange,
+  DocumentSnapshot,
+  QuerySnapshot,
+  QueryDocumentSnapshot,
+} from 'firebase/firestore'
 import { isArray, isPlainObject, isFunction, isNumber } from 'is-what'
 import copy from 'copy-anything'
 import { merge } from 'merge-anything'
@@ -14,11 +28,6 @@ import { isIncrementHelper } from '../utils/incrementHelper'
 import logError from './errors'
 import { FirestoreConfig } from './index'
 
-type DocumentSnapshot = Fb.firestore.DocumentSnapshot
-type QuerySnapshot = Fb.firestore.QuerySnapshot
-type DocumentChange = Fb.firestore.DocumentChange
-type QueryDocumentSnapshot = Fb.firestore.QueryDocumentSnapshot
-
 /**
  * A function returning the actions object
  *
@@ -27,13 +36,13 @@ type QueryDocumentSnapshot = Fb.firestore.QueryDocumentSnapshot
  * @returns {AnyObject} the actions object
  */
 export default function (firestoreConfig: FirestoreConfig): AnyObject {
-  const { FirebaseDependency: firebase, enablePersistence, synchronizeTabs } = firestoreConfig
+  const { FirebaseDependency: firebase } = firestoreConfig
   return {
     setUserId: ({ commit, getters }, userId) => {
       if (userId === undefined) userId = null
       // undefined cannot be synced to firestore
-      if (!userId && firebase.auth().currentUser) {
-        userId = firebase.auth().currentUser.uid
+      if (!userId && getAuth(firebase).currentUser) {
+        userId = getAuth(firebase).currentUser.uid
       }
       commit('SET_USER_ID', userId)
       if (getters.firestorePathComplete.includes('{userId}')) return logError('user-auth')
@@ -49,18 +58,18 @@ export default function (firestoreConfig: FirestoreConfig): AnyObject {
       if (!id) return {}
       const doc = merge(getters.storeRef[id], { id: null })
       const dId = await dispatch('insert', doc)
-      const idMap = { [id]: dId }
-      return idMap
+
+      return { [id]: dId }
     },
     duplicateBatch ({ state, getters, commit, dispatch }, ids = []) {
       if (!getters.collectionMode) return logError('only-in-collection-mode')
       if (!isArray(ids) || !ids.length) return {}
-      const idsMap = ids.reduce(async (carry, id) => {
+
+      return ids.reduce(async (carry, id) => {
         const idMap = await dispatch('duplicate', id)
         carry = await carry
         return Object.assign(carry, idMap)
       }, {})
-      return idsMap
     },
     patchDoc (
       { state, getters, commit, dispatch },
@@ -129,8 +138,7 @@ export default function (firestoreConfig: FirestoreConfig): AnyObject {
 
       // 1. Prepare for patching
       // 2. Push to syncStack
-      const deletions = state._sync.syncStack.deletions.concat(ids)
-      state._sync.syncStack.deletions = deletions
+      state._sync.syncStack.deletions = state._sync.syncStack.deletions.concat(ids)
 
       if (!state._sync.syncStack.deletions.length) return
       // 3. Create or refresh debounce & pass id to resolve
@@ -142,10 +150,9 @@ export default function (firestoreConfig: FirestoreConfig): AnyObject {
 
       // 2. Push to syncStack
       Object.keys(syncStackItem).forEach(id => {
-        const newVal = !state._sync.syncStack.propDeletions[id]
+        state._sync.syncStack.propDeletions[id] = !state._sync.syncStack.propDeletions[id]
           ? syncStackItem[id]
           : merge(state._sync.syncStack.propDeletions[id], syncStackItem[id])
-        state._sync.syncStack.propDeletions[id] = newVal
       })
 
       // 3. Create or refresh debounce & pass id to resolve
@@ -159,8 +166,7 @@ export default function (firestoreConfig: FirestoreConfig): AnyObject {
       const syncStack = getters.prepareForInsert(docs)
 
       // 2. Push to syncStack
-      const inserts = state._sync.syncStack.inserts.concat(syncStack)
-      state._sync.syncStack.inserts = inserts
+      state._sync.syncStack.inserts = state._sync.syncStack.inserts.concat(syncStack)
 
       // 3. Create or refresh debounce & pass id to resolve
       const payloadToResolve = isArray(payload) ? payload.map(doc => doc.id) : payload.id
@@ -176,8 +182,7 @@ export default function (firestoreConfig: FirestoreConfig): AnyObject {
 
       // 2. Create a reference to the SF doc.
       return new Promise((resolve, reject) => {
-        getters.dbRef
-          .set(initialDocPrepared)
+        setDoc(getters.dbRef, initialDocPrepared)
           .then(() => {
             if (state._conf.logging) {
               const message = 'Initial doc successfully inserted'
@@ -221,7 +226,7 @@ export default function (firestoreConfig: FirestoreConfig): AnyObject {
       state._sync.syncStack.rejects.forEach(r => r(error))
     },
     batchSync ({ getters, commit, dispatch, state }) {
-      const batch = makeBatchFromSyncstack(state, getters, firebase.firestore().batch())
+      const batch = makeBatchFromSyncstack(state, getters, writeBatch(getFirestore(firebase)))
       dispatch('_startPatching')
       state._sync.syncStack.debounceTimer = null
       return new Promise((resolve, reject) => {
@@ -304,9 +309,9 @@ export default function (firestoreConfig: FirestoreConfig): AnyObject {
           let ref = getters.dbRef
           // apply where clauses and orderBy
           getters.getWhereArrays(where).forEach(paramsArr => {
-            ref = ref.where(...paramsArr)
+            ref = where(ref, ...paramsArr)
           })
-          if (orderBy.length) ref = ref.orderBy(...orderBy)
+          if (orderBy.length) ref = orderBy(ref, ...orderBy)
           state._sync.fetched[identifier] = {
             ref,
             done: false,
@@ -404,8 +409,7 @@ export default function (firestoreConfig: FirestoreConfig): AnyObject {
             'color: goldenrod'
           )
         }
-        return getters.dbRef
-          .get(parameters.options)
+        return getDoc(getters.dbRef)
           .then(async _doc => {
             if (!_doc.exists) {
               // No initial doc found in docMode
@@ -453,7 +457,7 @@ export default function (firestoreConfig: FirestoreConfig): AnyObject {
         if (!id) throw 'missing-id'
         if (!getters.collectionMode) throw 'only-in-collection-mode'
         const ref = getters.dbRef
-        const _doc = await ref.doc(id).get(options)
+        const _doc = await getDoc(__doc(ref, id))
         if (!_doc.exists) {
           if (state._conf.logging) {
             throw `Doc with id "${id}" not found!`
@@ -624,10 +628,11 @@ export default function (firestoreConfig: FirestoreConfig): AnyObject {
       // apply where and orderBy clauses
       if (getters.collectionMode) {
         getters.getWhereArrays().forEach(whereParams => {
-          dbRef = dbRef.where(...whereParams)
+          // @ts-ignore
+          dbRef = where(dbRef, ...whereParams)
         })
         if (state._conf.sync.orderBy.length) {
-          dbRef = dbRef.orderBy(...state._conf.sync.orderBy)
+          dbRef = orderBy(dbRef, ...state._conf.sync.orderBy)
         }
       }
 
@@ -840,7 +845,8 @@ export default function (firestoreConfig: FirestoreConfig): AnyObject {
       }
 
       // open the stream
-      const unsubscribe = dbRef.onSnapshot(
+      const unsubscribe = onSnapshot(
+        dbRef,
         // this lets us know when our data is up-to-date with the server
         { includeMetadataChanges: true },
         // the parameter is either a querySnapshot (collection mode) or a
@@ -976,7 +982,7 @@ export default function (firestoreConfig: FirestoreConfig): AnyObject {
       // check userId
       dispatch('setUserId')
       const newDoc = doc
-      if (!newDoc.id) newDoc.id = getters.dbRef.doc().id
+      if (!newDoc.id) newDoc.id = __doc(getters.dbRef).id
       // apply default values
       const newDocWithDefaults = setDefaultValues(newDoc, state._conf.sync.defaultValues)
       // define the firestore update
@@ -1006,7 +1012,7 @@ export default function (firestoreConfig: FirestoreConfig): AnyObject {
       dispatch('setUserId')
       const newDocs = docs.reduce((carry, _doc) => {
         const newDoc = getValueFromPayloadPiece(_doc)
-        if (!newDoc.id) newDoc.id = getters.dbRef.doc().id
+        if (!newDoc.id) newDoc.id = __doc(getters.dbRef).id
         carry.push(newDoc)
         return carry
       }, [])

@@ -7,27 +7,26 @@ import { getPathVarMatches } from '../utils/apiHelpers'
 import setDefaultValues from '../utils/setDefaultValues'
 import { AnyObject } from '../declarations'
 import error from './errors'
-import firebase from 'firebase/compat'
-import FieldValue = firebase.firestore.FieldValue;
+import { collection, doc, deleteField, getFirestore } from 'firebase/firestore'
 
 export type IPluginGetters = {
-  firestorePathComplete: (state: any, getters?: any, rootState?: any, rootGetters?: any) => string
-  signedIn: (state: any, getters?: any, rootState?: any, rootGetters?: any) => boolean
-  dbRef: (state: any, getters?: any, rootState?: any, rootGetters?: any) => any
-  storeRef: (state: any, getters?: any, rootState?: any, rootGetters?: any) => AnyObject
-  collectionMode: (state: any, getters?: any, rootState?: any, rootGetters?: any) => boolean
+  firestorePathComplete: (state: any, getters?: any, rootState?: any, rootGetters?: any) => string;
+  signedIn: (state: any, getters?: any, rootState?: any, rootGetters?: any) => boolean;
+  dbRef: (state: any, getters?: any, rootState?: any, rootGetters?: any) => any;
+  storeRef: (state: any, getters?: any, rootState?: any, rootGetters?: any) => AnyObject;
+  collectionMode: (state: any, getters?: any, rootState?: any, rootGetters?: any) => boolean;
   prepareForPatch: (
     state: any,
     getters?: any,
     rootState?: any,
     rootGetters?: any
-  ) => (ids: string[], doc: AnyObject) => AnyObject
+  ) => (ids: string[], doc: AnyObject) => AnyObject;
   prepareForInsert: (
     state: any,
     getters?: any,
     rootState?: any,
     rootGetters?: any
-  ) => (items: any[]) => any[]
+  ) => (items: any[]) => any[];
   prepareInitialDocForInsert: (
     state: any,
     getters?: any,
@@ -65,11 +64,11 @@ export default function (firebase: any): AnyObject {
       if (!requireUser) return true
       return state._sync.signedIn
     },
-    dbRef: (state, getters, rootState, rootGetters) => {
+    dbRef: (state, getters) => {
       const path = getters.firestorePathComplete
       return getters.collectionMode
-        ? firebase.firestore().collection(path)
-        : firebase.firestore().doc(path)
+        ? collection(getFirestore(firebase), path)
+        : doc(getFirestore(firebase), path)
     },
     storeRef: (state, getters, rootState) => {
       const path = state._conf.statePropName
@@ -148,7 +147,7 @@ export default function (firebase: any): AnyObject {
         cleanedPath = path
       }
 
-      cleanedPatchData[cleanedPath] = FieldValue.delete()
+      cleanedPatchData[cleanedPath] = deleteField()
       cleanedPatchData.id = id
 
       return { [id]: cleanedPatchData }

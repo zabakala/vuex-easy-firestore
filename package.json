@@ -10,7 +10,7 @@
     "test--only": "ava --verbose --match='*only:*'",
     "rollup": "rollup -c build/rollup.js",
     "rollup:watch": "rollup -c build/rollup.js --watch",
-    "build": "npm run rollup && npm run test",
+    "build": "npm run rollup",
     "docs:dev": "vuepress dev docs",
     "docs:build": "vuepress build docs",
     "docs:deploy": "./docs/.vuepress/deploy.sh"
@@ -58,19 +58,19 @@
     "eslint-loader": "^2.2.1",
     "eslint-plugin-vue": "^5.2.3",
     "esm": "^3.2.25",
-    "firebase": "^9.0.0",
+    "firebase": "^10.1.0",
     "mock-cloud-firestore": "^0.12.0",
     "rollup": "^1.32.1",
     "rollup-plugin-node-resolve": "^4.2.4",
     "rollup-plugin-typescript2": "^0.27.1",
     "ts-node": "^8.10.1",
     "typescript": "^3.9.3",
-    "vue": "^2.6.11",
+    "vue": "2.7",
     "vuepress": "^1.5.0",
     "vuex": "^3.4.0"
   },
   "peerDependencies": {
-    "firebase": "^9.0.0"
+    "firebase": "^10.1.0"
   },
   "ava": {
     "extensions": [

@@ -1,5 +1,3 @@
-import 'firebase/compat/firestore';
-import 'firebase/compat/auth';
 import { IEasyFirestoreModule } from './declarations';
 import { arrayUnion, arrayRemove } from './utils/arrayHelpers';
 import { increment } from './utils/incrementHelper';
@@ -8,7 +6,7 @@ import { increment } from './utils/incrementHelper';
  *
  * @export
  * @param {(IEasyFirestoreModule | IEasyFirestoreModule[])} easyFirestoreModule A vuex-easy-firestore module (or array of modules) with proper configuration as per the documentation.
- * @param {{logging?: boolean, FirebaseDependency?: any}} extraConfig An object with `logging` and `FirebaseDependency` props. `logging` enables console logs for debugging. `FirebaseDependency` is the non-instanciated firebase class you can pass. (defaults to the firebase peer dependency)
+ * @param {{logging?: boolean, FirebaseDependency?: any}} extraConfig An object with `logging` and `FirebaseDependency` props. `logging` enables console logs for debugging. `FirebaseDependency` is the non-instantiated firebase class you can pass. (defaults to the firebase peer dependency)
  * @returns {*}
  */
 declare function vuexEasyFirestore(easyFirestoreModule: IEasyFirestoreModule | IEasyFirestoreModule[], { logging, preventInitialDocInsertion, FirebaseDependency, enablePersistence, synchronizeTabs, }?: {
