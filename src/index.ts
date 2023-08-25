@@ -8,6 +8,7 @@ import {
   setFirebaseDependency as setFirebase1,
 } from './utils/arrayHelpers'
 import { increment, setFirebaseDependency as setFirebase2 } from './utils/incrementHelper'
+import { worker } from './worker/client'
 
 /**
  * Create vuex-easy-firestore modules. Add as single plugin to Vuex Store.
@@ -56,6 +57,10 @@ function vuexEasyFirestore (
       const firestoreConfig: FirestoreConfig = { FirebaseDependency, enablePersistence, synchronizeTabs }
       store.registerModule(moduleName, iniModule(config, firestoreConfig))
     })
+
+    worker.onmessage = (e) => {
+      store.commit([e.data.result.module, e.data.action].join('/'), e.data.result)
+    }
   }
 }
 

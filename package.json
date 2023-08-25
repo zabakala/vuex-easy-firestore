@@ -8,8 +8,8 @@
   "scripts": {
     "test": "ava --verbose",
     "test--only": "ava --verbose --match='*only:*'",
-    "rollup": "rollup -c build/rollup.js",
-    "rollup:watch": "rollup -c build/rollup.js --watch",
+    "rollup": "rollup -c build/rollup.mjs",
+    "rollup:watch": "rollup -c build/rollup.mjs --watch",
     "build": "npm run rollup",
     "docs:dev": "vuepress dev docs",
     "docs:build": "vuepress build docs",
@@ -24,7 +24,6 @@
     "firestore",
     "firebase",
     "firebase-firestore",
-    "google-firebase",
     "firebase-cloud-firestore",
     "boilerplate",
     "store",
@@ -46,25 +45,19 @@
     "is-what": "^3.12.0",
     "lodash-es": "^4.17.15",
     "merge-anything": "^2.4.4",
-    "path-to-prop": "0.0.3",
+    "tslib": "^2.6.2",
     "vuex-easy-access": "^3.1.8"
   },
   "devDependencies": {
-    "@vue/eslint-config-standard": "^4.0.0",
-    "@vuepress/plugin-google-analytics": "^1.5.0",
+    "@rollup/plugin-typescript": "^11.1.2",
     "ava": "^3.8.2",
     "babel-eslint": "^10.1.0",
     "eslint": "^5.16.0",
     "eslint-loader": "^2.2.1",
     "eslint-plugin-vue": "^5.2.3",
-    "esm": "^3.2.25",
     "firebase": "^10.1.0",
-    "mock-cloud-firestore": "^0.12.0",
-    "rollup": "^1.32.1",
-    "rollup-plugin-node-resolve": "^4.2.4",
-    "rollup-plugin-typescript2": "^0.27.1",
-    "ts-node": "^8.10.1",
-    "typescript": "^3.9.3",
+    "rollup": "^3.28.1",
+    "typescript": "4.3",
     "vue": "2.7",
     "vuepress": "^1.5.0",
     "vuex": "^3.4.0"
@@ -76,10 +69,6 @@
     "extensions": [
       "ts",
       "js"
-    ],
-    "require": [
-      "esm",
-      "ts-node/register"
     ],
     "timeout": "30s"
   }
