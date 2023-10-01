@@ -47,7 +47,7 @@ const errorMessages = {
     // pass as argument into openDBChannel:
     dispatch('moduleName/openDBChannel', {groupId})
   `,
-  'patch-no-ref': `
+  'patch-no-target': `
     Something went wrong during the PATCH mutation:
     The document it's trying to patch does not exist.
   `,

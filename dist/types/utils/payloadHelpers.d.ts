@@ -16,3 +16,4 @@ export declare function getId(payloadPiece: object | string, conf?: object, path
  * @returns {*} the value
  */
 export declare function getValueFromPayloadPiece(payloadPiece: any): any;
+export declare function isCollectionType(state: any): boolean;

@@ -124,7 +124,7 @@ var errorMessages = {
     'missing-id': "\n    This action requires an id to be passed!\n  ",
     'patch-missing-id': "\n    Missing an id of the doc you want to patch!\n    Correct usage:\n\n    // pass `id` as a prop:\n    dispatch('module/set', {id: '123', name: 'best item name'})\n    // or\n    dispatch('module/patch', {id: '123', name: 'best item name'})\n  ",
     'missing-path-variables': "\n    A path variable was passed without defining it!\n    In VuexEasyFirestore you can create paths with variables:\n    eg: `groups/{groupId}/user/{userId}`\n\n    `userId` is automatically replaced with the userId of the firebase user.\n    `groupId` or any other variable that needs to be set after authentication needs to be passed upon the `openDBChannel` action.\n\n    // (in module config) Example path:\n    firestorePath: 'groups/{groupId}/user/{userId}'\n\n    // Then before openDBChannel:\n    // retrieve the value\n    const groupId = someIdRetrievedAfterSignin\n    // pass as argument into openDBChannel:\n    dispatch('moduleName/openDBChannel', {groupId})\n  ",
-    'patch-no-ref': "\n    Something went wrong during the PATCH mutation:\n    The document it's trying to patch does not exist.\n  ",
+    'patch-no-target': "\n    Something went wrong during the PATCH mutation:\n    The document it's trying to patch does not exist.\n  ",
     'only-in-collection-mode': "\n    The action you dispatched can only be used in 'collection' mode.\n  ",
     'initial-doc-failed': "\n    Initial doc insertion failed. Further `set` or `patch` actions will also fail. Requires an internet connection when the initial doc is inserted. Check the error returned by firebase:\n  ",
     'sync-error': "\n    Something went wrong while trying to synchronise data to Cloud Firestore.\n    The data is kept in queue, so that it will try to sync again upon the next 'set' or 'patch' action.\n  ",
@@ -246,6 +246,47 @@ function worker$1 (context = self) {
 var worker = new Worker(URL.createObjectURL(new Blob(["(" + worker$1.toString() + ")()"], { type: 'text/javascript' })));
 
 /**
+ * gets an ID from a single piece of payload.
+ *
+ * @export
+ * @param {(object | string)} payloadPiece
+ * @param {object} [conf] (optional - for error handling) the vuex-easy-access config
+ * @param {string} [path] (optional - for error handling) the path called
+ * @param {(object | any[] | string)} [fullPayload] (optional - for error handling) the full payload on which each was `getId()` called
+ * @returns {string} the id
+ */
+function getId(payloadPiece, conf, path, fullPayload) {
+    if (isWhat.isString(payloadPiece))
+        return payloadPiece;
+    if (isWhat.isPlainObject(payloadPiece)) {
+        if ('id' in payloadPiece)
+            return payloadPiece.id;
+        var keys = Object.keys(payloadPiece);
+        if (keys.length === 1)
+            return keys[0];
+    }
+    return '';
+}
+/**
+ * Returns a value of a payload piece. Eg. {[id]: 'val'} will return 'val'
+ *
+ * @param {*} payloadPiece
+ * @returns {*} the value
+ */
+function getValueFromPayloadPiece(payloadPiece) {
+    if (isWhat.isPlainObject(payloadPiece) &&
+        !payloadPiece.id &&
+        Object.keys(payloadPiece).length === 1 &&
+        isWhat.isPlainObject(payloadPiece[Object.keys(payloadPiece)[0]])) {
+        return Object.values(payloadPiece)[0];
+    }
+    return payloadPiece;
+}
+function isCollectionType(state) {
+    return state._conf.firestoreRefType.toLowerCase() === 'collection';
+}
+
+/**
  * a function returning the mutations object
  *
  * @export
@@ -321,10 +362,10 @@ function pluginMutations (userState) {
         PATCH_DOC: function (state, patches) {
             // Get the state prop ref
             var ref = state._conf.statePropName ? state[state._conf.statePropName] : state;
-            if (state._conf.firestoreRefType.toLowerCase() === 'collection')
+            if (isCollectionType(state))
                 ref = ref[patches.id];
             if (!ref)
-                return error('patch-no-ref');
+                return error('patch-no-target');
             var payload = { module: state._conf.moduleName, task: 'flattenObject', payload: { ref: ref, patches: patches } };
             worker.postMessage(JSON.stringify(payload));
         },
@@ -726,44 +767,6 @@ function createFetchIdentifier(whereOrderBy) {
         identifier += '[pathVariables]' + JSON.stringify(whereOrderBy.pathVariables);
     }
     return identifier;
-}
-
-/**
- * gets an ID from a single piece of payload.
- *
- * @export
- * @param {(object | string)} payloadPiece
- * @param {object} [conf] (optional - for error handling) the vuex-easy-access config
- * @param {string} [path] (optional - for error handling) the path called
- * @param {(object | any[] | string)} [fullPayload] (optional - for error handling) the full payload on which each was `getId()` called
- * @returns {string} the id
- */
-function getId(payloadPiece, conf, path, fullPayload) {
-    if (isWhat.isString(payloadPiece))
-        return payloadPiece;
-    if (isWhat.isPlainObject(payloadPiece)) {
-        if ('id' in payloadPiece)
-            return payloadPiece.id;
-        var keys = Object.keys(payloadPiece);
-        if (keys.length === 1)
-            return keys[0];
-    }
-    return '';
-}
-/**
- * Returns a value of a payload piece. Eg. {[id]: 'val'} will return 'val'
- *
- * @param {*} payloadPiece
- * @returns {*} the value
- */
-function getValueFromPayloadPiece(payloadPiece) {
-    if (isWhat.isPlainObject(payloadPiece) &&
-        !payloadPiece.id &&
-        Object.keys(payloadPiece).length === 1 &&
-        isWhat.isPlainObject(payloadPiece[Object.keys(payloadPiece)[0]])) {
-        return Object.values(payloadPiece)[0];
-    }
-    return payloadPiece;
 }
 
 /**
@@ -1950,8 +1953,8 @@ function pluginGetters (firebase) {
                 : state._conf.moduleName;
             return vuexEasyAccess.getDeepRef(rootState, path);
         },
-        collectionMode: function (state, getters, rootState) {
-            return state._conf.firestoreRefType.toLowerCase() === 'collection';
+        collectionMode: function (state) {
+            return isCollectionType(state);
         },
         docModeId: function (state, getters) {
             return getters.firestorePathComplete.split('/').pop();
@@ -1993,6 +1996,7 @@ function pluginGetters (firebase) {
                     patchData = doc;
                 }
                 // set default fields
+                patchData._action = 'patch';
                 patchData.updated_at = new Date();
                 patchData.updated_by = state._sync.userId;
                 // clean up item
@@ -2011,6 +2015,7 @@ function pluginGetters (firebase) {
             var collectionMode = getters.collectionMode;
             var patchData = {};
             // set default fields
+            patchData._action = 'delete';
             patchData.updated_at = new Date();
             patchData.updated_by = state._sync.userId;
             // add fillable and guard defaults
@@ -2035,6 +2040,7 @@ function pluginGetters (firebase) {
             // add fillable and guard defaults
             return items.reduce(function (carry, item) {
                 // set default fields
+                item._action = 'insert';
                 item.created_at = new Date();
                 item.created_by = state._sync.userId;
                 // clean up item

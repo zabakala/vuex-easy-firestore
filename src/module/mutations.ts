@@ -6,6 +6,7 @@ import { merge } from 'merge-anything'
 import { AnyObject } from '../declarations'
 import getStateWithSync from './state'
 import { worker } from '../worker/client'
+import { isCollectionType } from "../utils/payloadHelpers";
 
 /**
  * a function returning the mutations object
@@ -83,8 +84,8 @@ export default function (userState: object): AnyObject {
     PATCH_DOC (state, patches) {
       // Get the state prop ref
       let ref = state._conf.statePropName ? state[state._conf.statePropName] : state
-      if (state._conf.firestoreRefType.toLowerCase() === 'collection') ref = ref[patches.id]
-      if (!ref) return logError('patch-no-ref')
+      if (isCollectionType(state)) ref = ref[patches.id]
+      if (!ref) return logError('patch-no-target')
 
       const payload = { module: state._conf.moduleName, task: 'flattenObject', payload: { ref, patches } }
       worker.postMessage(JSON.stringify(payload))

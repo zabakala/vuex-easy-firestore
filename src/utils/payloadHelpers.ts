@@ -43,3 +43,7 @@ export function getValueFromPayloadPiece (payloadPiece: any): any {
   }
   return payloadPiece
 }
+
+export function isCollectionType (state: any) {
+  return state._conf.firestoreRefType.toLowerCase() === 'collection'
+}

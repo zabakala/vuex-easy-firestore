@@ -8,6 +8,7 @@ import setDefaultValues from '../utils/setDefaultValues'
 import { AnyObject } from '../declarations'
 import error from './errors'
 import { collection, doc, deleteField, getFirestore } from 'firebase/firestore'
+import { isCollectionType } from "../utils/payloadHelpers";
 
 export type IPluginGetters = {
   firestorePathComplete: (state: any, getters?: any, rootState?: any, rootGetters?: any) => string;
@@ -76,8 +77,8 @@ export default function (firebase: any): AnyObject {
         : state._conf.moduleName
       return getDeepRef(rootState, path)
     },
-    collectionMode: (state, getters, rootState) => {
-      return state._conf.firestoreRefType.toLowerCase() === 'collection'
+    collectionMode: (state) => {
+      return isCollectionType(state)
     },
     docModeId: (state, getters) => {
       return getters.firestorePathComplete.split('/').pop()
@@ -116,6 +117,7 @@ export default function (firebase: any): AnyObject {
           patchData = doc
         }
         // set default fields
+        patchData._action = 'patch'
         patchData.updated_at = new Date()
         patchData.updated_by = state._sync.userId
         // clean up item
@@ -132,6 +134,7 @@ export default function (firebase: any): AnyObject {
       const collectionMode = getters.collectionMode
       const patchData: AnyObject = {}
       // set default fields
+      patchData._action = 'delete'
       patchData.updated_at = new Date()
       patchData.updated_by = state._sync.userId
       // add fillable and guard defaults
@@ -156,6 +159,7 @@ export default function (firebase: any): AnyObject {
       // add fillable and guard defaults
       return items.reduce((carry, item) => {
         // set default fields
+        item._action = 'insert'
         item.created_at = new Date()
         item.created_by = state._sync.userId
         // clean up item
