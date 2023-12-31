@@ -1081,10 +1081,10 @@ function pluginActions (firestoreConfig) {
                     var ref_1 = getters.dbRef;
                     // apply where clauses and orderBy
                     getters.getWhereArrays(where).forEach(function (paramsArr) {
-                        ref_1 = where.apply(void 0, tslib.__spreadArray([ref_1], paramsArr));
+                        ref_1 = firestore.query(ref_1, where.apply(void 0, paramsArr));
                     });
                     if (orderBy.length)
-                        ref_1 = orderBy.apply(void 0, tslib.__spreadArray([ref_1], orderBy));
+                        ref_1 = firestore.query(ref_1, orderBy.apply(void 0, orderBy));
                     state._sync.fetched[identifier] = {
                         ref: ref_1,
                         done: false,
@@ -1417,13 +1417,13 @@ function pluginActions (firestoreConfig) {
             if (getters.collectionMode) {
                 getters.getWhereArrays().forEach(function (whereParams) {
                     // @ts-ignore
-                    dbRef = firestore.where.apply(void 0, tslib.__spreadArray([dbRef], whereParams));
+                    dbRef = firestore.query(dbRef, firestore.where.apply(null, whereParams));
                 });
                 if (state._conf.sync.orderBy.length) {
-                    dbRef = firestore.orderBy.apply(void 0, tslib.__spreadArray([dbRef], state._conf.sync.orderBy));
+                    dbRef = firestore.query(dbRef, firestore.orderBy.apply(null, state._conf.sync.orderBy));
                 }
             }
-            // creates promises that can be resolved from outside their scope and that
+            // creates resolvable promises from outside their scope and that
             // can give their status
             var nicePromise = function () {
                 var m = {

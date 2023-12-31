@@ -7,6 +7,7 @@ import {
   where,
   onSnapshot,
   getFirestore,
+  query,
   writeBatch,
   DocumentChange,
   DocumentSnapshot,
@@ -309,9 +310,9 @@ export default function (firestoreConfig: FirestoreConfig): AnyObject {
           let ref = getters.dbRef
           // apply where clauses and orderBy
           getters.getWhereArrays(where).forEach(paramsArr => {
-            ref = where(ref, ...paramsArr)
+            ref = query(ref, where(...paramsArr))
           })
-          if (orderBy.length) ref = orderBy(ref, ...orderBy)
+          if (orderBy.length) ref = query(ref, orderBy(...orderBy))
           state._sync.fetched[identifier] = {
             ref,
             done: false,
@@ -629,14 +630,14 @@ export default function (firestoreConfig: FirestoreConfig): AnyObject {
       if (getters.collectionMode) {
         getters.getWhereArrays().forEach(whereParams => {
           // @ts-ignore
-          dbRef = where(dbRef, ...whereParams)
+          dbRef = query(dbRef, where.apply(null, whereParams))
         })
         if (state._conf.sync.orderBy.length) {
-          dbRef = orderBy(dbRef, ...state._conf.sync.orderBy)
+          dbRef = query(dbRef, orderBy.apply(null, state._conf.sync.orderBy))
         }
       }
 
-      // creates promises that can be resolved from outside their scope and that
+      // creates resolvable promises from outside their scope and that
       // can give their status
       const nicePromise = (): any => {
         const m = {

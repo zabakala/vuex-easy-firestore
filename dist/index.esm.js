@@ -4,7 +4,7 @@ import { __spreadArray, __awaiter, __generator, __assign } from 'tslib';
 import copy from 'copy-anything';
 import { merge } from 'merge-anything';
 import { getAuth } from 'firebase/auth';
-import { arrayUnion as arrayUnion$1, arrayRemove as arrayRemove$1, increment as increment$1, doc, setDoc, writeBatch, getFirestore, getDoc, where, orderBy, onSnapshot, collection, deleteField } from 'firebase/firestore';
+import { arrayUnion as arrayUnion$1, arrayRemove as arrayRemove$1, increment as increment$1, doc, setDoc, writeBatch, getFirestore, query, getDoc, where, orderBy, onSnapshot, collection, deleteField } from 'firebase/firestore';
 import flatten from 'flatten-anything';
 import { compareObjectProps } from 'compare-anything';
 import { findAndReplace, findAndReplaceIf } from 'find-and-replace-anything';
@@ -1077,10 +1077,10 @@ function pluginActions (firestoreConfig) {
                     var ref_1 = getters.dbRef;
                     // apply where clauses and orderBy
                     getters.getWhereArrays(where).forEach(function (paramsArr) {
-                        ref_1 = where.apply(void 0, __spreadArray([ref_1], paramsArr));
+                        ref_1 = query(ref_1, where.apply(void 0, paramsArr));
                     });
                     if (orderBy.length)
-                        ref_1 = orderBy.apply(void 0, __spreadArray([ref_1], orderBy));
+                        ref_1 = query(ref_1, orderBy.apply(void 0, orderBy));
                     state._sync.fetched[identifier] = {
                         ref: ref_1,
                         done: false,
@@ -1413,13 +1413,13 @@ function pluginActions (firestoreConfig) {
             if (getters.collectionMode) {
                 getters.getWhereArrays().forEach(function (whereParams) {
                     // @ts-ignore
-                    dbRef = where.apply(void 0, __spreadArray([dbRef], whereParams));
+                    dbRef = query(dbRef, where.apply(null, whereParams));
                 });
                 if (state._conf.sync.orderBy.length) {
-                    dbRef = orderBy.apply(void 0, __spreadArray([dbRef], state._conf.sync.orderBy));
+                    dbRef = query(dbRef, orderBy.apply(null, state._conf.sync.orderBy));
                 }
             }
-            // creates promises that can be resolved from outside their scope and that
+            // creates resolvable promises from outside their scope and that
             // can give their status
             var nicePromise = function () {
                 var m = {
