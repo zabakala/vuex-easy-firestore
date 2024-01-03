@@ -1,5 +1,6 @@
 import error from '../module/errors'
 import { isPlainObject, isString } from 'is-what'
+import {AnyObject} from "../declarations";
 
 /**
  * gets an ID from a single piece of payload.
@@ -46,4 +47,12 @@ export function getValueFromPayloadPiece (payloadPiece: any): any {
 
 export function isCollectionType (state: any) {
   return state._conf.firestoreRefType.toLowerCase() === 'collection'
+}
+
+export function filterPatchDeleteItems(patchData: AnyObject): string[] {
+  return Object.keys(patchData).filter((k) => patchData[k]?._methodName === 'deleteField')
+}
+
+export function isPatchingByDeleting(patchData: AnyObject): boolean {
+  return Boolean(filterPatchDeleteItems(patchData).length)
 }

@@ -285,6 +285,12 @@ function getValueFromPayloadPiece(payloadPiece) {
 function isCollectionType(state) {
     return state._conf.firestoreRefType.toLowerCase() === 'collection';
 }
+function filterPatchDeleteItems(patchData) {
+    return Object.keys(patchData).filter(function (k) { var _a; return ((_a = patchData[k]) === null || _a === void 0 ? void 0 : _a._methodName) === 'deleteField'; });
+}
+function isPatchingByDeleting(patchData) {
+    return Boolean(filterPatchDeleteItems(patchData).length);
+}
 
 /**
  * a function returning the mutations object
@@ -364,8 +370,9 @@ function pluginMutations (userState) {
             var ref = state._conf.statePropName ? state[state._conf.statePropName] : state;
             if (isCollectionType(state))
                 ref = ref[patches.id];
-            if (!ref)
+            if (!ref) {
                 return error('patch-no-target');
+            }
             var payload = { module: state._conf.moduleName, task: 'flattenObject', payload: { ref: ref, patches: patches } };
             worker.postMessage(JSON.stringify(payload));
         },
@@ -1911,6 +1918,14 @@ function pluginActions (firestoreConfig) {
     };
 }
 
+var DbAction;
+(function (DbAction) {
+    DbAction["Delete"] = "delete";
+    DbAction["Insert"] = "insert";
+    DbAction["Patch"] = "patch";
+    DbAction["PatchDelete"] = "patchDelete";
+})(DbAction || (DbAction = {}));
+
 /**
  * A function returning the getters object
  *
@@ -1988,15 +2003,17 @@ function pluginGetters (firebase) {
             // returns {object} -> {id: data}
             return ids.reduce(function (carry, id) {
                 var patchData = {};
+                var isPatchDelete = false;
                 // retrieve full object in case there's an empty doc passed
                 if (!Object.keys(doc).length) {
                     patchData = collectionMode ? getters.storeRef[id] : getters.storeRef;
                 }
                 else {
                     patchData = doc;
+                    isPatchDelete = isPatchingByDeleting(patchData);
                 }
                 // set default fields
-                patchData._action = 'patch';
+                patchData._action = isPatchDelete ? DbAction.PatchDelete : DbAction.Patch;
                 patchData.updated_at = new Date();
                 patchData.updated_by = state._sync.userId;
                 // clean up item
@@ -2009,13 +2026,13 @@ function pluginGetters (firebase) {
                 return carry;
             }, {});
         }; },
-        prepareForPropDeletion: function (state, getters, rootState, rootGetters) { return function (path) {
+        prepareForPropDeletion: function (state, getters) { return function (path) {
             var _a;
             if (path === void 0) { path = ''; }
             var collectionMode = getters.collectionMode;
             var patchData = {};
             // set default fields
-            patchData._action = 'delete';
+            patchData._action = DbAction.Delete;
             patchData.updated_at = new Date();
             patchData.updated_by = state._sync.userId;
             // add fillable and guard defaults
@@ -2040,7 +2057,7 @@ function pluginGetters (firebase) {
             // add fillable and guard defaults
             return items.reduce(function (carry, item) {
                 // set default fields
-                item._action = 'insert';
+                item._action = DbAction.Insert;
                 item.created_at = new Date();
                 item.created_by = state._sync.userId;
                 // clean up item
@@ -2303,5 +2320,7 @@ function vuexEasyFirestore(easyFirestoreModule, _a) {
 exports.arrayRemove = arrayRemove;
 exports.arrayUnion = arrayUnion;
 exports.default = vuexEasyFirestore;
+exports.filterPatchDeleteItems = filterPatchDeleteItems;
 exports.increment = increment;
+exports.isPatchingByDeleting = isPatchingByDeleting;
 exports.vuexEasyFirestore = vuexEasyFirestore;

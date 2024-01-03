@@ -1,3 +1,5 @@
+import { AnyObject } from "../declarations";
+
 /**
  * gets an ID from a single piece of payload.
  *
@@ -16,3 +18,7 @@ export declare function getId(payloadPiece: object | string, conf?: object, path
  * @returns {*} the value
  */
 export declare function getValueFromPayloadPiece(payloadPiece: any): any;
+
+export declare function filterPatchDeleteItems(patchData: AnyObject): string[];
+
+export declare function isPatchingByDeleting(patchData: AnyObject): boolean;

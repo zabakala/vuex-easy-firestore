@@ -85,7 +85,10 @@ export default function (userState: object): AnyObject {
       // Get the state prop ref
       let ref = state._conf.statePropName ? state[state._conf.statePropName] : state
       if (isCollectionType(state)) ref = ref[patches.id]
-      if (!ref) return logError('patch-no-target')
+
+      if (!ref) {
+        return logError('patch-no-target')
+      }
 
       const payload = { module: state._conf.moduleName, task: 'flattenObject', payload: { ref, patches } }
       worker.postMessage(JSON.stringify(payload))

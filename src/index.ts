@@ -8,6 +8,7 @@ import {
   setFirebaseDependency as setFirebase1,
 } from './utils/arrayHelpers'
 import { increment, setFirebaseDependency as setFirebase2 } from './utils/incrementHelper'
+import { isPatchingByDeleting, filterPatchDeleteItems } from './utils/payloadHelpers'
 import { worker } from './worker/client'
 
 /**
@@ -65,4 +66,5 @@ function vuexEasyFirestore (
 }
 
 export { vuexEasyFirestore, arrayUnion, arrayRemove, increment }
+export { isPatchingByDeleting, filterPatchDeleteItems }
 export default vuexEasyFirestore

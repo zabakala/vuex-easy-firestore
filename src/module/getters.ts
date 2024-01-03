@@ -1,4 +1,4 @@
-import { isString, isArray } from 'is-what'
+import { isArray, isString } from 'is-what'
 import { getDeepRef } from 'vuex-easy-access'
 import filter from 'filter-anything'
 import { merge } from 'merge-anything'
@@ -7,8 +7,9 @@ import { getPathVarMatches } from '../utils/apiHelpers'
 import setDefaultValues from '../utils/setDefaultValues'
 import { AnyObject } from '../declarations'
 import error from './errors'
-import { collection, doc, deleteField, getFirestore } from 'firebase/firestore'
-import { isCollectionType } from "../utils/payloadHelpers";
+import { collection, deleteField, doc, getFirestore } from 'firebase/firestore'
+import { isCollectionType, isPatchingByDeleting } from '../utils/payloadHelpers';
+import { DbAction } from "../utils/enums";
 
 export type IPluginGetters = {
   firestorePathComplete: (state: any, getters?: any, rootState?: any, rootGetters?: any) => string;
@@ -110,36 +111,46 @@ export default function (firebase: any): AnyObject {
       // returns {object} -> {id: data}
       return ids.reduce((carry, id) => {
         let patchData: AnyObject = {}
+        let isPatchDelete = false
+
         // retrieve full object in case there's an empty doc passed
         if (!Object.keys(doc).length) {
           patchData = collectionMode ? getters.storeRef[id] : getters.storeRef
         } else {
           patchData = doc
+          isPatchDelete = isPatchingByDeleting(patchData)
         }
+
         // set default fields
-        patchData._action = 'patch'
+        patchData._action = isPatchDelete ? DbAction.PatchDelete : DbAction.Patch
         patchData.updated_at = new Date()
         patchData.updated_by = state._sync.userId
+
         // clean up item
         const cleanedPatchData = filter(patchData, getters.fillables, getters.guard)
         const itemToUpdate = flatten(cleanedPatchData)
+
         // add id (required to get ref later at apiHelpers.ts)
         // @ts-ignore
         itemToUpdate.id = id
         carry[id] = itemToUpdate
+
         return carry
       }, {})
     },
-    prepareForPropDeletion: (state, getters, rootState, rootGetters) => (path = '') => {
+    prepareForPropDeletion: (state, getters) => (path = '') => {
       const collectionMode = getters.collectionMode
       const patchData: AnyObject = {}
+
       // set default fields
-      patchData._action = 'delete'
+      patchData._action = DbAction.Delete
       patchData.updated_at = new Date()
       patchData.updated_by = state._sync.userId
+
       // add fillable and guard defaults
       // clean up item
       const cleanedPatchData = filter(patchData, getters.fillables, getters.guard)
+
       // add id (required to get ref later at apiHelpers.ts)
       let id, cleanedPath
       if (collectionMode) {
@@ -159,12 +170,14 @@ export default function (firebase: any): AnyObject {
       // add fillable and guard defaults
       return items.reduce((carry, item) => {
         // set default fields
-        item._action = 'insert'
+        item._action = DbAction.Insert
         item.created_at = new Date()
         item.created_by = state._sync.userId
+
         // clean up item
         item = filter(item, getters.fillables, getters.guard)
         carry.push(item)
+
         return carry
       }, [])
     },
