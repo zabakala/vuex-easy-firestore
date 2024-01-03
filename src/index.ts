@@ -7,6 +7,7 @@ import {
   arrayRemove,
   setFirebaseDependency as setFirebase1,
 } from './utils/arrayHelpers'
+import { eventEmitter, EVENT__REF_NO_TARGET } from './utils/eventHelper'
 import { increment, setFirebaseDependency as setFirebase2 } from './utils/incrementHelper'
 import { worker } from './worker/client'
 
@@ -65,4 +66,5 @@ function vuexEasyFirestore (
 }
 
 export { vuexEasyFirestore, arrayUnion, arrayRemove, increment }
+export { EVENT__REF_NO_TARGET, eventEmitter }
 export default vuexEasyFirestore

@@ -7,6 +7,7 @@ import { AnyObject } from '../declarations'
 import getStateWithSync from './state'
 import { worker } from '../worker/client'
 import { isCollectionType } from "../utils/payloadHelpers";
+import { emitEvent, EVENT__REF_NO_TARGET } from "../utils/eventHelper";
 
 /**
  * a function returning the mutations object
@@ -85,7 +86,11 @@ export default function (userState: object): AnyObject {
       // Get the state prop ref
       let ref = state._conf.statePropName ? state[state._conf.statePropName] : state
       if (isCollectionType(state)) ref = ref[patches.id]
-      if (!ref) return logError('patch-no-target')
+
+      if (!ref) {
+        emitEvent(EVENT__REF_NO_TARGET, patches.id)
+        return logError('patch-no-target')
+      }
 
       const payload = { module: state._conf.moduleName, task: 'flattenObject', payload: { ref, patches } }
       worker.postMessage(JSON.stringify(payload))

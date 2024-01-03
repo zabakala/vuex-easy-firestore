@@ -1,5 +1,6 @@
 import { IEasyFirestoreModule } from './declarations';
 import { arrayUnion, arrayRemove } from './utils/arrayHelpers';
+import { eventEmitter, EVENT__REF_NO_TARGET } from './utils/eventHelper';
 import { increment } from './utils/incrementHelper';
 /**
  * Create vuex-easy-firestore modules. Add as single plugin to Vuex Store.
@@ -17,4 +18,5 @@ declare function vuexEasyFirestore(easyFirestoreModule: IEasyFirestoreModule | I
     synchronizeTabs?: boolean;
 }): any;
 export { vuexEasyFirestore, arrayUnion, arrayRemove, increment };
+export { eventEmitter, EVENT__REF_NO_TARGET };
 export default vuexEasyFirestore;

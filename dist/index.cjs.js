@@ -286,6 +286,13 @@ function isCollectionType(state) {
     return state._conf.firestoreRefType.toLowerCase() === 'collection';
 }
 
+var EventEmitter = require('events');
+var EVENT__REF_NO_TARGET = 'ev__ref_no_target';
+var eventEmitter = new EventEmitter();
+function emitEvent(event, val) {
+    eventEmitter.emit(event, val);
+}
+
 /**
  * a function returning the mutations object
  *
@@ -364,8 +371,10 @@ function pluginMutations (userState) {
             var ref = state._conf.statePropName ? state[state._conf.statePropName] : state;
             if (isCollectionType(state))
                 ref = ref[patches.id];
-            if (!ref)
+            if (!ref) {
+                emitEvent(EVENT__REF_NO_TARGET, patches.id);
                 return error('patch-no-target');
+            }
             var payload = { module: state._conf.moduleName, task: 'flattenObject', payload: { ref: ref, patches: patches } };
             worker.postMessage(JSON.stringify(payload));
         },
@@ -2300,8 +2309,10 @@ function vuexEasyFirestore(easyFirestoreModule, _a) {
     };
 }
 
+exports.EVENT__REF_NO_TARGET = EVENT__REF_NO_TARGET;
 exports.arrayRemove = arrayRemove;
 exports.arrayUnion = arrayUnion;
 exports.default = vuexEasyFirestore;
+exports.eventEmitter = eventEmitter;
 exports.increment = increment;
 exports.vuexEasyFirestore = vuexEasyFirestore;
