@@ -950,7 +950,7 @@ export default function (firestoreConfig: FirestoreConfig): AnyObject {
         })
 
       const unsubscribeStream = state._sync.unsubscribe[identifier]
-      if (isFunction(unsubscribeStream)) {
+      if (isFunction(unsubscribeStream) && state._sync.streaming[identifier]) {
         unsubscribeStream()
         state._sync.streaming[identifier].resolve()
         state._sync.streaming[identifier] = null

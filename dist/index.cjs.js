@@ -1672,7 +1672,7 @@ function pluginActions (firestoreConfig) {
                     pathVariables: state._sync.pathVariables,
                 });
             var unsubscribeStream = state._sync.unsubscribe[identifier];
-            if (isWhat.isFunction(unsubscribeStream)) {
+            if (isWhat.isFunction(unsubscribeStream) && state._sync.streaming[identifier]) {
                 unsubscribeStream();
                 state._sync.streaming[identifier].resolve();
                 state._sync.streaming[identifier] = null;
