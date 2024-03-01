@@ -22,8 +22,7 @@ export default function (userState: object): AnyObject {
     SET_PATHVARS (state, pathVars) {
       const self = this
       Object.keys(pathVars).forEach(key => {
-        const pathPiece = pathVars[key]
-        self._vm.$set(state._sync.pathVariables, key, pathPiece)
+        state._sync.pathVariables[key] = pathVars[key]
       })
     },
 
@@ -58,11 +57,11 @@ export default function (userState: object): AnyObject {
       const { statePropName } = state._conf
       const docContainer = statePropName ? state[statePropName] : state
       Object.keys(newState).forEach(key => {
-        self._vm.$set(state, key, newState[key])
+        state[key] = newState[key]
       })
       Object.keys(docContainer).forEach(key => {
         if (Object.keys(newState).includes(key)) return
-        self._vm.$delete(docContainer, key)
+        delete docContainer[key]
       })
     },
 
@@ -75,9 +74,9 @@ export default function (userState: object): AnyObject {
     INSERT_DOC (state, doc) {
       if (state._conf.firestoreRefType.toLowerCase() !== 'collection') return
       if (state._conf.statePropName) {
-        this._vm.$set(state[state._conf.statePropName], doc.id, doc)
+        state[state._conf.statePropName][doc.id] = doc
       } else {
-        this._vm.$set(state, doc.id, doc)
+        state[doc.id] = doc
       }
     },
 
@@ -97,9 +96,9 @@ export default function (userState: object): AnyObject {
     DELETE_DOC (state, id) {
       if (state._conf.firestoreRefType.toLowerCase() !== 'collection') return
       if (state._conf.statePropName) {
-        this._vm.$delete(state[state._conf.statePropName], id)
+        delete state[state._conf.statePropName][id]
       } else {
-        this._vm.$delete(state, id)
+        delete state[id]
       }
     },
 
@@ -107,11 +106,15 @@ export default function (userState: object): AnyObject {
       const searchTarget = state._conf.statePropName ? state[state._conf.statePropName] : state
       const propArr = path.split('.')
       const target = propArr.pop()
+
       if (!propArr.length) {
-        return this._vm.$delete(searchTarget, target)
+        delete searchTarget[target]
+        return searchTarget
       }
+
       const ref = getDeepRef(searchTarget, propArr.join('.'))
-      return this._vm.$delete(ref, target)
+      delete ref[target]
+      return ref
     },
 
     WORKER_TASK (state, { module, task, payload }) {
@@ -125,7 +128,7 @@ export default function (userState: object): AnyObject {
       switch (task) {
         case 'flattenObject':
           Array.isArray(payload) && payload.forEach((params) => {
-            this._vm.$set(...params)
+            params[0][params[1]] = params[2]
           })
 
           break

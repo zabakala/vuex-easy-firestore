@@ -299,10 +299,8 @@ function pluginMutations (userState) {
     var initialUserState = copy(userState);
     return {
         SET_PATHVARS: function (state, pathVars) {
-            var self = this;
             Object.keys(pathVars).forEach(function (key) {
-                var pathPiece = pathVars[key];
-                self._vm.$set(state._sync.pathVariables, key, pathPiece);
+                state._sync.pathVariables[key] = pathVars[key];
             });
         },
         SET_SYNCCLAUSES: function (state, _a) {
@@ -332,18 +330,17 @@ function pluginMutations (userState) {
                 if (isFunction(unsubscribe))
                     unsubscribe();
             });
-            var self = this;
             var _sync = pluginState()._sync;
             var newState = merge(initialUserState, { _sync: _sync });
             var statePropName = state._conf.statePropName;
             var docContainer = statePropName ? state[statePropName] : state;
             Object.keys(newState).forEach(function (key) {
-                self._vm.$set(state, key, newState[key]);
+                state[key] = newState[key];
             });
             Object.keys(docContainer).forEach(function (key) {
                 if (Object.keys(newState).includes(key))
                     return;
-                self._vm.$delete(docContainer, key);
+                delete docContainer[key];
             });
         },
         resetSyncStack: function (state) {
@@ -355,10 +352,10 @@ function pluginMutations (userState) {
             if (state._conf.firestoreRefType.toLowerCase() !== 'collection')
                 return;
             if (state._conf.statePropName) {
-                this._vm.$set(state[state._conf.statePropName], doc.id, doc);
+                state[state._conf.statePropName][doc.id] = doc;
             }
             else {
-                this._vm.$set(state, doc.id, doc);
+                state[doc.id] = doc;
             }
         },
         PATCH_DOC: function (state, patches) {
@@ -376,10 +373,10 @@ function pluginMutations (userState) {
             if (state._conf.firestoreRefType.toLowerCase() !== 'collection')
                 return;
             if (state._conf.statePropName) {
-                this._vm.$delete(state[state._conf.statePropName], id);
+                delete state[state._conf.statePropName][id];
             }
             else {
-                this._vm.$delete(state, id);
+                delete state[id];
             }
         },
         DELETE_PROP: function (state, path) {
@@ -387,13 +384,14 @@ function pluginMutations (userState) {
             var propArr = path.split('.');
             var target = propArr.pop();
             if (!propArr.length) {
-                return this._vm.$delete(searchTarget, target);
+                delete searchTarget[target];
+                return searchTarget;
             }
             var ref = getDeepRef(searchTarget, propArr.join('.'));
-            return this._vm.$delete(ref, target);
+            delete ref[target];
+            return ref;
         },
         WORKER_TASK: function (state, _a) {
-            var _this = this;
             var module = _a.module, task = _a.task, payload = _a.payload;
             if (state._conf.logging) {
                 console.log("%c Committing job from web-worker for Firestore MODULE: " + module + "]", 'color: goldenrod');
@@ -401,8 +399,7 @@ function pluginMutations (userState) {
             switch (task) {
                 case 'flattenObject':
                     Array.isArray(payload) && payload.forEach(function (params) {
-                        var _a;
-                        (_a = _this._vm).$set.apply(_a, params);
+                        params[0][params[1]] = params[2];
                     });
                     break;
             }

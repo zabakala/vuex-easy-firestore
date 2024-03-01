@@ -1,6 +1,6 @@
 {
   "name": "vuex-easy-firestore",
-  "version": "1.37.2",
+  "version": "2.0.0",
   "description": "Easy coupling of firestore and a vuex module. 2-way sync with 0 boilerplate!",
   "main": "dist/index.cjs.js",
   "module": "dist/index.esm.js",
@@ -46,7 +46,7 @@
     "lodash-es": "^4.17.15",
     "merge-anything": "^2.4.4",
     "tslib": "^2.6.2",
-    "vuex-easy-access": "^3.1.8"
+    "vuex-easy-access": "github:zabakala/vuex-easy-access#vue-3"
   },
   "devDependencies": {
     "@rollup/plugin-typescript": "^11.1.2",
@@ -58,9 +58,9 @@
     "firebase": "^10.1.0",
     "rollup": "^3.28.1",
     "typescript": "4.3",
-    "vue": "2.7",
-    "vuepress": "^1.5.0",
-    "vuex": "^3.4.0"
+    "vue": "^3.4.21",
+    "vuepress": "^2.0.0-rc.8",
+    "vuex": "^4.1.0"
   },
   "peerDependencies": {
     "firebase": "^10.1.0"
